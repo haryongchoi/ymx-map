@@ -109,6 +109,16 @@
   .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--hairline);border-top-color:var(--gold);border-radius:50%;animation:sp 0.8s linear infinite;vertical-align:-2px;margin-right:6px}
   @keyframes sp{to{transform:rotate(360deg)}}
   .disclaimer{margin-top:12px;font-size:10.5px;color:var(--ink-muted);opacity:.85;line-height:1.5}
+  .locbtn{width:100%;margin-top:10px;cursor:pointer;height:48px;border-radius:12px;border:1px solid rgba(253,207,24,.5);background:rgba(253,207,24,.14);color:var(--gold);font-family:var(--sans);font-size:14.5px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px}
+  .locbtn:hover{background:rgba(253,207,24,.24)}
+  .fpanel{position:fixed;top:52px;right:12px;z-index:560;background:var(--panel);border:1px solid var(--hairline);border-radius:14px;padding:9px;box-shadow:0 14px 34px -10px rgba(0,0,0,.55);display:none;flex-direction:column;gap:6px;width:172px;max-width:calc(100vw - 24px);backdrop-filter:blur(6px)}
+  .fpanel.show{display:flex}
+  .fpanel .ft{font-size:10.5px;color:var(--ink-soft);font-weight:800;letter-spacing:.04em;margin:2px 4px 3px}
+  .fchip{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;border:1px solid var(--hairline);background:rgba(255,255,255,.04);color:var(--ink-soft);cursor:pointer;font-size:13px;font-weight:700;user-select:none}
+  .fchip .fem{font-size:15px;width:18px;text-align:center}
+  .fchip.on{background:rgba(253,207,24,.15);border-color:rgba(253,207,24,.5);color:var(--ink)}
+  .fchip.on::after{content:'✓';margin-left:auto;color:var(--gold);font-weight:800}
+  .fchip.all{justify-content:center;background:rgba(50,149,210,.14);border-color:rgba(50,149,210,.35);color:var(--ink);margin-top:2px}
   @media(max-width:480px){
     .nav{left:8px;right:8px;top:50px;min-width:0;padding:9px 12px 9px 10px;gap:9px}
     .nav .arrow{width:38px;height:38px}
@@ -133,9 +143,11 @@
   <div class="hud" id="hud" style="display:none">
     <div class="stat"><div class="k">현재 시각</div><div class="v" id="hudClock">08:57</div></div>
     <div class="stat"><div class="k">발견</div><div class="v gold" id="hudFound">0</div></div>
+    <div class="sbtn" id="filterBtn" title="아이콘 종류 선택">☰</div>
     <div class="sbtn on" id="soundBtn" title="소리">🔊</div>
   </div>
 </div>
+<div class="fpanel" id="fpanel"></div>
 
 <div class="nav" id="navCard">
   <div class="arrow" id="navArrow">↑</div>
@@ -149,6 +161,7 @@
   <button class="cbtn mode" id="modeBtn">🚶 수동</button>
   <button class="cbtn go walkbtn" id="walkBtn">가속 ▶</button>
   <button class="cbtn" id="pauseBtn">❚❚</button>
+  <button class="cbtn" id="recenterBtn" style="display:none">📍 내 위치</button>
 </div>
 <div class="zoomctl" id="zoomCtl">
   <button class="zbtn on" id="autoZoomBtn" title="자동 확대/축소">AUTO</button>
@@ -165,6 +178,7 @@
     <h1><span class="go">YMX 찾기</span> 🧭</h1>
     <p class="sub">실제 성수동 지도 위를 걸어 YMX(서울숲코오롱디지털타워1차)까지 안내합니다. 오시는 길에 식당·카페·편의점·병원·약국 등을 깜빡이며 알려드려요.</p>
     <div class="stations" id="stationList"></div>
+    <button class="locbtn" id="gpsBtn">📍 내 위치에서 안내 (GPS)</button>
     <div class="loadmsg" id="loadMsg" style="display:none"><span class="spin"></span>지도·경로·주변 장소 불러오는 중…</div>
     <p class="disclaimer">지도 데이터 ⓒ OpenStreetMap 기여자 · 경로/주변장소는 OSM 공개 데이터 기반이라 실제와 다를 수 있어요. 인터넷 연결이 필요합니다.</p>
   </div>
@@ -231,7 +245,9 @@ const CURATED=[
 
 const brandLL=(a)=>L.latLng(a[0],a[1]);
 let map,me,routeLine,gLayer,routePts=[],cum=[0],routeTotal=0;
-const G={state:'menu',station:null,dist:0,time:0,found:0,mode:'auto',go:false,introT:0,won:false,pois:[],autoZoom:true,_tz:17};
+const G={state:'menu',station:null,dist:0,time:0,found:0,mode:'auto',go:false,introT:0,won:false,pois:[],autoZoom:true,_tz:17,
+  gps:false,gpsWatch:null,userLL:null,
+  filter:{star:true,cafe:true,conv:true,pharm:true,hosp:true,food:false,cloth:false,shop:false}};
 const WALK=10, RUN=20, GOAL_SEC=180; // 08:57 + 180s = 09:00
 
 /* ---------- boot ---------- */
@@ -323,6 +339,7 @@ function buildStationList(){
     b.onclick=()=>begin(st);list.appendChild(b);});
 }
 async function begin(st){
+  stopGPS();setControlMode(false);
   G.station=st;
   document.getElementById('loadMsg').style.display='block';
   document.querySelectorAll('.station').forEach(s=>s.style.pointerEvents='none');
@@ -358,7 +375,7 @@ function drawScene(){
   bigPin(G.station.ll,'start','🚇 '+G.station.name);
   bigPin(COMPANY.ll,'end','🏢 YMX 회사');
   // curated highlights
-  CURATED.forEach(c=>addMarker(c.ll,'star','★',c.name,{name:c.name,type:c.type,desc:c.desc,star:true}));
+  CURATED.forEach(c=>addMarker(c.ll,'star','★',c.name,{name:c.name,type:c.type,desc:c.desc,star:true,cat:'star'}));
   // me
   const icon=L.divIcon({className:'',html:'<div class="me"><img src="'+SYMBOL_SRC+'"></div>',iconSize:[44,44],iconAnchor:[22,32]});
   me=L.marker(routePts[0],{icon,zIndexOffset:1000}).addTo(gLayer);
@@ -374,14 +391,17 @@ function addMarker(ll,cls,glyph,label,info){
   const html='<div class="mk '+cls+'"><div class="ico">'+glyph+'</div>'+(label?'<div class="lab">'+label+'</div>':'')+'</div>';
   const m=L.marker(ll,{icon:L.divIcon({className:'',html,iconSize:[28,44],iconAnchor:[14,14]})}).addTo(gLayer||map);
   if(info)m.bindPopup('<b>'+info.name+'</b><br><span style="color:#666">'+(info.type||'')+'</span>'+(info.desc?'<br>'+info.desc:''));
-  G.pois.push({ll:[ll[0],ll[1]],name:label||info.name,star:!!(info&&info.star),found:false,marker:m});
+  const cat=(info&&info.cat)||'poi';
+  G.pois.push({ll:[ll[0],ll[1]],name:label||info.name,cat,star:!!(info&&info.star),found:false,marker:m});
+  if(G.filter&&G.filter[cat]===false&&gLayer){gLayer.removeLayer(m);} // 필터 꺼진 종류는 숨김
   return m;
 }
+function applyFilter(){ if(!gLayer)return; G.pois.forEach(p=>{ if(G.filter[p.cat]) gLayer.addLayer(p.marker); else gLayer.removeLayer(p.marker); }); }
 function addPOIs(pois){
   pois.forEach(p=>{ // skip if too close to a curated star (avoid dupes)
     if(CURATED.some(c=>metersBetween(c.ll,p.ll)<25))return;
     const cat=CAT[p.cls]||CAT.poi;
-    addMarker(p.ll,p.cls+' blink',cat.g,p.name,{name:p.name,type:cat.l});
+    addMarker(p.ll,p.cls+' blink',cat.g,p.name,{name:p.name,type:cat.l,cat:p.cls});
   });
 }
 
@@ -412,6 +432,7 @@ function loop(ts){const dt=last?Math.min(.033,(ts-last)/1000):0;last=ts;
 function step(dt){
   if(G.introT>0){G.introT-=dt;return;} // 시작 오버뷰 잠깐 유지
   G.time+=dt;
+  if(G.gps)return;                      // GPS 모드: 실제 위치(onGPS)가 이동 담당
   let spd=0;
   if(G.mode==='auto'){spd=G.go?RUN:WALK;}      // 자동: 항상 걷기, 토글 시 가속
   else{spd=G.go?WALK:0;}                          // 수동: 토글 켜야 걷기(한 번 누르면 계속)
@@ -428,7 +449,7 @@ function step(dt){
     if(dz!=null)map.setView(pos,dz,{animate:true}); // 자동줌 변경 시에만 줌 조정
     else map.panTo(pos,{animate:false});            // 평소엔 위치만 따라감(수동 줌 유지)
     // discover POIs
-    for(const p of G.pois){if(!p.found&&metersBetween(pos,p.ll)<32){p.found=true;G.found++;blip('coin');
+    for(const p of G.pois){if(!p.found&&G.filter[p.cat]&&metersBetween(pos,p.ll)<32){p.found=true;G.found++;blip('coin');
       toast('📍 '+p.name+(p.star?' ⭐':''),p.star?'gold':'');if(p.star){G.found++;}updateHud();}}
   }
   updateHud();updateNav();
@@ -459,7 +480,7 @@ function updateNav(){
 }
 
 function arrive(){
-  if(G.won)return;G.won=true;G.state='done';blip('win');
+  if(G.won)return;G.won=true;G.state='done';stopGPS();blip('win');
   const total=G.time,onTime=total<GOAL_SEC,margin=GOAL_SEC-total;
   document.getElementById('winClock').textContent=fmtClock(total);
   document.getElementById('winFound').textContent=G.found;
@@ -479,7 +500,7 @@ document.getElementById('shareBtn').onclick=async function(){
 };
 document.getElementById('againBtn').onclick=()=>{document.getElementById('winScreen').classList.remove('show');document.getElementById('controls').classList.add('show');document.getElementById('zoomCtl').classList.add('show');setAuto(true);G._tz=17;G.state='play';G.dist=0;G.time=0;G.found=0;G.won=false;G.go=false;setModeUI();G.pois.forEach(p=>p.found=false);me.setLatLng(routePts[0]);try{map.fitBounds(routeLine.getBounds().pad(0.18));}catch(e){}G.introT=2.0;updateHud();updateNav();};
 function resetToMenu(){
-  G.state='menu';G.go=false;G.introT=0;
+  G.state='menu';G.go=false;G.introT=0;stopGPS();setControlMode(false);
   if(gLayer)gLayer.clearLayers();G.pois=[];
   document.getElementById('hud').style.display='none';
   document.getElementById('navCard').classList.remove('show');
@@ -489,10 +510,79 @@ function resetToMenu(){
   document.getElementById('hintline').style.display='none';
   document.getElementById('loadMsg').style.display='none';
   document.querySelectorAll('.station').forEach(s=>s.style.pointerEvents='');
+  document.getElementById('fpanel').classList.remove('show');
   document.getElementById('startScreen').classList.add('show');
 }
 document.getElementById('resetBtn').onclick=resetToMenu;
 document.getElementById('homeBtn').onclick=resetToMenu;
+
+/* ---------- 위치 기반(GPS) 안내 ---------- */
+function setControlMode(gps){
+  const d=v=>v?'none':'';
+  document.getElementById('modeBtn').style.display=gps?'none':'';
+  document.getElementById('walkBtn').style.display=gps?'none':'';
+  document.getElementById('pauseBtn').style.display=gps?'none':'';
+  document.getElementById('recenterBtn').style.display=gps?'':'none';
+}
+function stopGPS(){ if(G.gpsWatch!=null){try{navigator.geolocation.clearWatch(G.gpsWatch);}catch(e){}G.gpsWatch=null;} G.gps=false; }
+function nearestDistOnRoute(ll){ let best=1e18,bi=0; for(let i=0;i<routePts.length;i++){const d=metersBetween(ll,routePts[i]);if(d<best){best=d;bi=i;}} return cum[bi]||0; }
+function onGPS(pos){
+  if(!G.gps||G.state!=='play')return;
+  const ll=[pos.coords.latitude,pos.coords.longitude];G.userLL=ll;
+  if(me)me.setLatLng(ll);
+  map.panTo(ll,{animate:true});
+  G.dist=nearestDistOnRoute(ll);
+  for(const p of G.pois){if(!p.found&&G.filter[p.cat]&&metersBetween(ll,p.ll)<32){p.found=true;G.found++;blip('coin');toast('📍 '+p.name+(p.star?' ⭐':''),p.star?'gold':'');}}
+  updateHud();updateNav();
+  if(metersBetween(ll,COMPANY.ll)<28)arrive();
+}
+function beginGPS(){
+  if(!navigator.geolocation){toast('이 브라우저는 위치를 지원하지 않아요','bad');return;}
+  const lm=document.getElementById('loadMsg');lm.style.display='block';
+  document.querySelectorAll('.station').forEach(s=>s.style.pointerEvents='none');
+  document.getElementById('gpsBtn').style.pointerEvents='none';
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const ll=[pos.coords.latitude,pos.coords.longitude];
+    G.station={id:'me',name:'내 위치',line:'현재 위치 GPS',ll};
+    await refineCompany();
+    routePts=await fetchRoute(ll,COMPANY.ll);
+    cum=[0];routeTotal=0;for(let i=1;i<routePts.length;i++){routeTotal+=metersBetween(routePts[i-1],routePts[i]);cum.push(routeTotal);}
+    drawScene();
+    document.getElementById('startScreen').classList.remove('show');
+    document.getElementById('hud').style.display='flex';
+    document.getElementById('navCard').classList.add('show');
+    document.getElementById('controls').classList.add('show');
+    document.getElementById('zoomCtl').classList.add('show');
+    setControlMode(true);setAuto(true);
+    G.gps=true;G.state='play';G.dist=0;G.time=0;G.found=0;G.won=false;G.introT=0;G.userLL=ll;
+    me.setLatLng(ll);map.setView(ll,17,{animate:false});
+    ensureAudio();updateHud();updateNav();
+    last=0;requestAnimationFrame(loop);
+    G.gpsWatch=navigator.geolocation.watchPosition(onGPS,()=>{},{enableHighAccuracy:true,maximumAge:1500,timeout:12000});
+    const mid=routePts[Math.floor(routePts.length/2)];const R=Math.min(1500,Math.round(Math.max(metersBetween(mid,routePts[0]),metersBetween(mid,COMPANY.ll))+260));
+    fetchPOIs(mid,R).then(addPOIs).catch(()=>{});
+    const hl=document.getElementById('hintline');hl.innerHTML='📍 <b>실제 위치</b>로 안내 중 — 지도를 보며 회사로 오세요';hl.style.display='block';setTimeout(()=>hl.style.display='none',5200);
+    lm.style.display='none';document.getElementById('gpsBtn').style.pointerEvents='';
+  },err=>{
+    lm.style.display='none';document.getElementById('gpsBtn').style.pointerEvents='';
+    document.querySelectorAll('.station').forEach(s=>s.style.pointerEvents='');
+    toast(err&&err.code===1?'위치 권한을 허용해 주세요 🔒':'위치를 가져올 수 없어요','bad');
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+}
+document.getElementById('gpsBtn').onclick=beginGPS;
+document.getElementById('recenterBtn').onclick=()=>{if(G.userLL)map.setView(G.userLL,map.getZoom(),{animate:true});};
+
+/* ---------- 아이콘 종류 필터 ---------- */
+const FILTER_CATS=[{k:'star',e:'⭐',l:'명소'},{k:'cafe',e:'☕',l:'카페'},{k:'food',e:'🍽',l:'식당'},{k:'conv',e:'🏪',l:'편의점'},{k:'pharm',e:'💊',l:'약국'},{k:'hosp',e:'🏥',l:'병원'},{k:'cloth',e:'👕',l:'의류'},{k:'shop',e:'🛍',l:'상점'}];
+function buildFilter(){
+  const p=document.getElementById('fpanel');p.innerHTML='<div class="ft">아이콘 종류</div>';
+  FILTER_CATS.forEach(c=>{const el=document.createElement('div');el.className='fchip'+(G.filter[c.k]?' on':'');el.innerHTML='<span class="fem">'+c.e+'</span>'+c.l;
+    el.onclick=()=>{G.filter[c.k]=!G.filter[c.k];el.classList.toggle('on',G.filter[c.k]);applyFilter();};p.appendChild(el);});
+  const all=document.createElement('div');all.className='fchip all';all.textContent='전체 켜기 / 끄기';
+  all.onclick=()=>{const anyOff=FILTER_CATS.some(c=>!G.filter[c.k]);FILTER_CATS.forEach(c=>G.filter[c.k]=anyOff);buildFilter();applyFilter();};p.appendChild(all);
+}
+buildFilter();
+document.getElementById('filterBtn').onclick=()=>document.getElementById('fpanel').classList.toggle('show');
 
 /* ---------- audio ---------- */
 let AC,master,soundOn=true,bgmTimer,nextT=0,step2=0;const TEMPO=126,SD=60/TEMPO/2;
