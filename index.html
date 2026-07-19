@@ -61,6 +61,8 @@
   .mk.poi .ico{border-color:#3295d2}.mk.food .ico{border-color:#e0714a}.mk.cafe .ico{border-color:#9b6a3f}.mk.shop .ico{border-color:#7a5cd0}.mk.conv .ico{border-color:#2f9e6b}
   .mk.hosp .ico{border-color:#e0483f}.mk.pharm .ico{border-color:#17a2b8}.mk.cloth .ico{border-color:#d05fa0}
   .mk.star .ico{width:32px;height:32px;background:var(--gold);border-color:#fff;font-size:17px}
+  .mk.popup .ico{width:32px;height:32px;background:#d05fa0;border-color:#fff;font-size:17px}
+  .mk.popup .lab{color:#7a2860;background:#ffe6f4}
   .mk.blink .ico{animation:blink 1.7s ease-in-out infinite}
   @keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.9)}}
   .mk .lab{margin-top:2px;font-size:10px;font-weight:800;color:#1d3e79;background:rgba(255,255,255,.92);padding:1px 5px;border-radius:5px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 3px rgba(0,0,0,.18)}
@@ -109,6 +111,13 @@
   .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--hairline);border-top-color:var(--gold);border-radius:50%;animation:sp 0.8s linear infinite;vertical-align:-2px;margin-right:6px}
   @keyframes sp{to{transform:rotate(360deg)}}
   .disclaimer{margin-top:12px;font-size:10.5px;color:var(--ink-muted);opacity:.85;line-height:1.5}
+  .popuplink{display:block;margin-top:12px;text-align:center;font-size:12.5px;font-weight:800;color:#e57bb5;text-decoration:none;background:rgba(208,95,160,.12);border:1px solid rgba(208,95,160,.35);border-radius:10px;padding:9px}
+  .popuplink:hover{background:rgba(208,95,160,.2)}
+  .gamelink{display:block;margin-top:8px;text-align:center;font-size:12.5px;font-weight:800;color:var(--sky);text-decoration:none;background:rgba(50,149,210,.12);border:1px solid rgba(50,149,210,.35);border-radius:10px;padding:9px}
+  .gamelink:hover{background:rgba(50,149,210,.2)}
+  .dirtoggle{display:flex;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--hairline);border-radius:12px;padding:5px;margin:18px 0 2px}
+  .dirbtn{flex:1;height:42px;border:none;border-radius:9px;background:transparent;color:var(--ink-soft);font-family:var(--sans);font-size:13.5px;font-weight:800;cursor:pointer;white-space:nowrap}
+  .dirbtn.on{background:var(--gold);color:var(--on-gold)}
   .locbtn{width:100%;margin-top:10px;cursor:pointer;height:48px;border-radius:12px;border:1px solid rgba(253,207,24,.5);background:rgba(253,207,24,.14);color:var(--gold);font-family:var(--sans);font-size:14.5px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px}
   .locbtn:hover{background:rgba(253,207,24,.24)}
   .fpanel{position:fixed;top:52px;right:12px;z-index:560;background:var(--panel);border:1px solid var(--hairline);border-radius:14px;padding:9px;box-shadow:0 14px 34px -10px rgba(0,0,0,.55);display:none;flex-direction:column;gap:6px;width:172px;max-width:calc(100vw - 24px);backdrop-filter:blur(6px)}
@@ -139,7 +148,7 @@
 <div id="map"></div>
 
 <div class="topbar">
-  <div class="brand"><img id="brandLogo" alt="YMX"><b>YMX 찾기</b></div>
+  <div class="brand"><img id="brandLogo" alt="YMX"></div>
   <div class="hud" id="hud" style="display:none">
     <div class="stat"><div class="k">현재 시각</div><div class="v" id="hudClock">08:57</div></div>
     <div class="stat"><div class="k">발견</div><div class="v gold" id="hudFound">0</div></div>
@@ -177,10 +186,16 @@
     <div class="eyebrow">YMX · 디지털 트윈 · 성수동</div>
     <h1><span class="go">YMX 찾기</span> 🧭</h1>
     <p class="sub">실제 성수동 지도 위를 걸어 YMX(서울숲코오롱디지털타워1차)까지 안내합니다. 오시는 길에 식당·카페·편의점·병원·약국 등을 깜빡이며 알려드려요.</p>
+    <div class="dirtoggle" id="dirToggle">
+      <button class="dirbtn on" data-dir="to_company">🏢 회사로 가기</button>
+      <button class="dirbtn" data-dir="to_station">🚇 역으로 가기</button>
+    </div>
     <div class="stations" id="stationList"></div>
-    <button class="locbtn" id="gpsBtn">📍 내 위치에서 안내 (GPS)</button>
+    <button class="locbtn" id="gpsBtn">📍 내 위치에서 회사로 (GPS)</button>
     <div class="loadmsg" id="loadMsg" style="display:none"><span class="spin"></span>지도·경로·주변 장소 불러오는 중…</div>
-    <p class="disclaimer">지도 데이터 ⓒ OpenStreetMap 기여자 · 경로/주변장소는 OSM 공개 데이터 기반이라 실제와 다를 수 있어요. 인터넷 연결이 필요합니다.</p>
+    <a class="popuplink" href="https://www.heypop.kr/popup?area=성수" target="_blank" rel="noopener">🎪 지금 뜨는 성수동 팝업 보기 →</a>
+    <a class="gamelink" href="game.html">🎮 심심풀이 · 성수동 런게임 하러 가기 →</a>
+    <p class="disclaimer">지도 데이터 ⓒ OpenStreetMap 기여자 · 경로/주변장소는 OSM 공개 데이터 기반이라 실제와 다를 수 있어요. 🎪 팝업은 자주 열리는 <b>공간</b> 표시이며, 실시간 팝업은 위 링크에서 확인하세요. 인터넷 연결이 필요합니다.</p>
   </div>
 </div>
 
@@ -195,7 +210,7 @@
       <div class="statbox"><div class="k">발견한 명소</div><div class="v gold" id="winFound">0</div></div>
       <div class="statbox"><div class="k">평가</div><div class="v" id="winRank" style="font-size:19px">A</div></div>
     </div>
-    <div class="company">
+    <div class="company" id="coBlock">
       <div class="cn">🏢 YMX (와이엠엑스)</div>
       <div class="ca" id="coAddr">서울 성동구 · 서울숲 코오롱디지털타워1차</div>
       <div class="cd">디지털 트윈으로 현실을 가상에 그대로 복제하는 회사. 방금 지나온 성수동처럼요. 🌐</div>
@@ -242,12 +257,19 @@ const CURATED=[
   {kw:'블루보틀',    name:'블루보틀 성수', type:'카페',     ll:[37.54600,127.05540], desc:'국내 1호 블루보틀 매장.'},
   {kw:'무신사',      name:'무신사 스토어', type:'편집숍',   ll:[37.54360,127.05590], desc:'패션 플랫폼 무신사의 오프라인 스토어.'},
 ];
+/* 팝업스토어가 자주 열리는 성수동 명소 공간 (좌표는 대략치, 수정 가능). 실시간 팝업은 링크로 확인 */
+const POPUPS=[
+  {name:'LCDC 서울',      ll:[37.54170,127.05980], desc:'패션·아트·라이프스타일 복합공간 — 팝업 상시.'},
+  {name:'에스팩토리',      ll:[37.54390,127.05600], desc:'연무장길 초입 대형 팝업·전시·런칭 공간.'},
+  {name:'언더스탠드에비뉴', ll:[37.54490,127.04410], desc:'서울숲 앞 복합공간 — 팝업·마켓·전시.'},
+];
 
 const brandLL=(a)=>L.latLng(a[0],a[1]);
 let map,me,routeLine,gLayer,routePts=[],cum=[0],routeTotal=0;
 const G={state:'menu',station:null,dist:0,time:0,found:0,mode:'auto',go:false,introT:0,won:false,pois:[],autoZoom:true,_tz:17,
   gps:false,gpsWatch:null,userLL:null,
-  filter:{star:true,cafe:true,conv:true,pharm:true,hosp:true,food:false,cloth:false,shop:false}};
+  dir:'to_company',startLL:null,startName:'',destLL:null,destName:'',destShort:'회사',destIsCompany:true,
+  filter:{star:true,popup:true,cafe:true,conv:true,pharm:true,hosp:true,food:false,cloth:false,shop:false}};
 const WALK=10, RUN=20, GOAL_SEC=180; // 08:57 + 180s = 09:00
 
 /* ---------- boot ---------- */
@@ -328,14 +350,16 @@ function classify(t){
   if(t.shop)return'shop';
   return'poi';
 }
-const CAT={cafe:{g:'☕',l:'카페'},food:{g:'🍽',l:'식당'},conv:{g:'🏪',l:'편의점'},pharm:{g:'💊',l:'약국'},hosp:{g:'🏥',l:'병원'},cloth:{g:'👕',l:'의류'},shop:{g:'🛍',l:'상점'},poi:{g:'📍',l:'장소'}};
+const CAT={cafe:{g:'☕',l:'카페'},food:{g:'🍽',l:'식당'},conv:{g:'🏪',l:'편의점'},pharm:{g:'💊',l:'약국'},hosp:{g:'🏥',l:'병원'},cloth:{g:'👕',l:'의류'},shop:{g:'🛍',l:'상점'},popup:{g:'🎪',l:'팝업'},poi:{g:'📍',l:'장소'}};
 
 /* ---------- start ---------- */
 function buildStationList(){
   const list=document.getElementById('stationList');list.innerHTML='';
+  const toStation=G.dir==='to_station';
   STATIONS.forEach(st=>{const d=Math.round(metersBetween(st.ll,COMPANY.ll));
     const b=document.createElement('div');b.className='station';b.tabIndex=0;
-    b.innerHTML='<div class="line">🚇 '+st.line+'</div><div class="name">'+st.name+'</div><div class="dist">회사까지 ~'+d+'m</div>';
+    const dl=toStation?('회사에서 ~'+d+'m'):('회사까지 ~'+d+'m');
+    b.innerHTML='<div class="line">🚇 '+st.line+'</div><div class="name">'+st.name+'</div><div class="dist">'+dl+'</div>';
     b.onclick=()=>begin(st);list.appendChild(b);});
 }
 async function begin(st){
@@ -344,7 +368,17 @@ async function begin(st){
   document.getElementById('loadMsg').style.display='block';
   document.querySelectorAll('.station').forEach(s=>s.style.pointerEvents='none');
   await refineCompany();
-  routePts=await fetchRoute(st.ll,COMPANY.ll);
+  // 방향에 따른 출발/도착
+  let startLL,endLL;
+  if(G.dir==='to_station'){ // 임직원: 회사 → 역
+    startLL=COMPANY.ll;endLL=st.ll;
+    G.startName='🏢 YMX 회사';G.destName='🚇 '+st.name;G.destShort=st.name;G.destLL=st.ll;G.destIsCompany=false;
+  }else{ // 방문자: 역 → 회사
+    startLL=st.ll;endLL=COMPANY.ll;
+    G.startName='🚇 '+st.name;G.destName='🏢 YMX 회사';G.destShort='회사';G.destLL=COMPANY.ll;G.destIsCompany=true;
+  }
+  G.startLL=startLL;
+  routePts=await fetchRoute(startLL,endLL);
   // cumulative
   cum=[0];routeTotal=0;for(let i=1;i<routePts.length;i++){routeTotal+=metersBetween(routePts[i-1],routePts[i]);cum.push(routeTotal);}
   drawScene();
@@ -364,7 +398,7 @@ async function begin(st){
   last=0;requestAnimationFrame(loop);
   // 주변 장소: 경로 중간점 + 경로 전체를 덮는 반경으로 불러와 팝업
   const mid=routePts[Math.floor(routePts.length/2)];
-  const R=Math.min(1300,Math.round(Math.max(metersBetween(mid,routePts[0]),metersBetween(mid,COMPANY.ll))+260));
+  const R=Math.min(1300,Math.round(Math.max(metersBetween(mid,routePts[0]),metersBetween(mid,routePts[routePts.length-1]))+260));
   fetchPOIs(mid,R).then(addPOIs).catch(()=>{});
 }
 function drawScene(){
@@ -372,17 +406,19 @@ function drawScene(){
   G.pois=[];
   routeLine=L.polyline(routePts,{color:'#e0483f',weight:7,opacity:.9}).addTo(gLayer);
   L.polyline(routePts,{color:'#fff',weight:2,opacity:.5,dashArray:'2 8'}).addTo(gLayer);
-  bigPin(G.station.ll,'start','🚇 '+G.station.name);
-  bigPin(COMPANY.ll,'end','🏢 YMX 회사');
+  bigPin(G.startLL,'start',G.startName);
+  bigPin(G.destLL,'end',G.destName);
   // curated highlights
   CURATED.forEach(c=>addMarker(c.ll,'star','★',c.name,{name:c.name,type:c.type,desc:c.desc,star:true,cat:'star'}));
+  POPUPS.forEach(p=>addMarker(p.ll,'popup','🎪',p.name,{name:p.name,type:'팝업 공간',desc:p.desc,star:true,cat:'popup'}));
   // me
   const icon=L.divIcon({className:'',html:'<div class="me"><img src="'+SYMBOL_SRC+'"></div>',iconSize:[44,44],iconAnchor:[22,32]});
   me=L.marker(routePts[0],{icon,zIndexOffset:1000}).addTo(gLayer);
   map.setView(routePts[0],17,{animate:false});
   // route link (real directions)
   const el=document.getElementById('routeLink');
-  el.href='https://map.kakao.com/link/to/'+encodeURIComponent(COMPANY.name)+','+COMPANY.ll[0]+','+COMPANY.ll[1];
+  const linkName=G.destIsCompany?COMPANY.name:G.destShort;
+  el.href='https://map.kakao.com/link/to/'+encodeURIComponent(linkName)+','+G.destLL[0]+','+G.destLL[1];
   document.getElementById('coAddr').textContent='서울 성동구 · '+COMPANY.name;
 }
 function bigPin(ll,cls,label){const html='<div class="pinbig '+cls+'"><div class="bub">'+label+'</div><div class="tip"></div></div>';
@@ -399,7 +435,7 @@ function addMarker(ll,cls,glyph,label,info){
 function applyFilter(){ if(!gLayer)return; G.pois.forEach(p=>{ if(G.filter[p.cat]) gLayer.addLayer(p.marker); else gLayer.removeLayer(p.marker); }); }
 function addPOIs(pois){
   pois.forEach(p=>{ // skip if too close to a curated star (avoid dupes)
-    if(CURATED.some(c=>metersBetween(c.ll,p.ll)<25))return;
+    if(CURATED.some(c=>metersBetween(c.ll,p.ll)<25)||POPUPS.some(c=>metersBetween(c.ll,p.ll)<25))return;
     const cat=CAT[p.cls]||CAT.poi;
     addMarker(p.ll,p.cls+' blink',cat.g,p.name,{name:p.name,type:cat.l,cat:p.cls});
   });
@@ -463,7 +499,7 @@ function updateNav(){
   const rem=Math.max(0,Math.round(routeTotal-G.dist));
   document.getElementById('navDist').textContent=rem+'m';
   // find next notable turn ahead
-  let instr='직진',type='straight',turn=false,road='회사 방향';
+  let instr='직진',type='straight',turn=false,road=(G.destShort||'회사')+' 방향';
   const s=segAt(G.dist);
   let found=false;
   for(let i=s+1;i<routePts.length-1&&i<s+40;i++){
@@ -471,7 +507,7 @@ function updateNav(){
     let d=((b2-b1+540)%360)-180;
     if(Math.abs(d)>32){const dTo=Math.round(cum[i]-G.dist);instr=(dTo<40?'곧 ':dTo+'m 후 ')+(d>0?'우회전':'좌회전');type=d>0?'right':'left';turn=dTo<70;found=true;break;}
   }
-  if(rem<40){instr='곧 도착';type='arrive';turn=true;road='YMX 회사 앞';}
+  if(rem<40){instr='곧 도착';type='arrive';turn=true;road=(G.destShort||'회사')+' 앞';}
   else if(!found)instr='직진';
   document.getElementById('navInstr').textContent=instr;document.getElementById('navRoad').textContent=road;
   const a=document.getElementById('navArrow');a.innerHTML=arrowSVG(type);a.classList.toggle('turn',turn);
@@ -485,8 +521,9 @@ function arrive(){
   document.getElementById('winClock').textContent=fmtClock(total);
   document.getElementById('winFound').textContent=G.found;
   document.getElementById('winRank').textContent=G.found>=15?'S':G.found>=10?'A':G.found>=5?'B':'C';
-  document.getElementById('winTitle').innerHTML='YMX <span class="go">도착!</span> 🎉';
-  document.getElementById('winSub').textContent='YMX에 오신 걸 환영합니다! 성수동 잘 찾아오셨어요 😊';
+  document.getElementById('winTitle').innerHTML=(G.destIsCompany?'YMX':G.destShort)+' <span class="go">도착!</span> 🎉';
+  document.getElementById('winSub').textContent=G.destIsCompany?'YMX에 오신 걸 환영합니다! 성수동 잘 찾아오셨어요 😊':(G.destShort+'에 도착했어요! 조심히 가세요 👋');
+  document.getElementById('coBlock').style.display=G.destIsCompany?'':'none';
   document.getElementById('winScreen').classList.add('show');
   document.getElementById('controls').classList.remove('show');
   document.getElementById('zoomCtl').classList.remove('show');
@@ -534,7 +571,7 @@ function onGPS(pos){
   G.dist=nearestDistOnRoute(ll);
   for(const p of G.pois){if(!p.found&&G.filter[p.cat]&&metersBetween(ll,p.ll)<32){p.found=true;G.found++;blip('coin');toast('📍 '+p.name+(p.star?' ⭐':''),p.star?'gold':'');}}
   updateHud();updateNav();
-  if(metersBetween(ll,COMPANY.ll)<28)arrive();
+  if(G.destLL&&metersBetween(ll,G.destLL)<28)arrive();
 }
 function beginGPS(){
   if(!navigator.geolocation){toast('이 브라우저는 위치를 지원하지 않아요','bad');return;}
@@ -545,7 +582,16 @@ function beginGPS(){
     const ll=[pos.coords.latitude,pos.coords.longitude];
     G.station={id:'me',name:'내 위치',line:'현재 위치 GPS',ll};
     await refineCompany();
-    routePts=await fetchRoute(ll,COMPANY.ll);
+    // 방향에 따른 목적지: 방문자→회사, 임직원→가장 가까운 역
+    let endLL;
+    if(G.dir==='to_station'){
+      let best=STATIONS[0],bd=1e18;STATIONS.forEach(s=>{const dd=metersBetween(ll,s.ll);if(dd<bd){bd=dd;best=s;}});
+      endLL=best.ll;G.destName='🚇 '+best.name;G.destShort=best.name;G.destIsCompany=false;
+    }else{
+      endLL=COMPANY.ll;G.destName='🏢 YMX 회사';G.destShort='회사';G.destIsCompany=true;
+    }
+    G.startLL=ll;G.startName='📍 내 위치';G.destLL=endLL;
+    routePts=await fetchRoute(ll,endLL);
     cum=[0];routeTotal=0;for(let i=1;i<routePts.length;i++){routeTotal+=metersBetween(routePts[i-1],routePts[i]);cum.push(routeTotal);}
     drawScene();
     document.getElementById('startScreen').classList.remove('show');
@@ -559,9 +605,9 @@ function beginGPS(){
     ensureAudio();updateHud();updateNav();
     last=0;requestAnimationFrame(loop);
     G.gpsWatch=navigator.geolocation.watchPosition(onGPS,()=>{},{enableHighAccuracy:true,maximumAge:1500,timeout:12000});
-    const mid=routePts[Math.floor(routePts.length/2)];const R=Math.min(1500,Math.round(Math.max(metersBetween(mid,routePts[0]),metersBetween(mid,COMPANY.ll))+260));
+    const mid=routePts[Math.floor(routePts.length/2)];const R=Math.min(1500,Math.round(Math.max(metersBetween(mid,routePts[0]),metersBetween(mid,routePts[routePts.length-1]))+260));
     fetchPOIs(mid,R).then(addPOIs).catch(()=>{});
-    const hl=document.getElementById('hintline');hl.innerHTML='📍 <b>실제 위치</b>로 안내 중 — 지도를 보며 회사로 오세요';hl.style.display='block';setTimeout(()=>hl.style.display='none',5200);
+    const hl=document.getElementById('hintline');hl.innerHTML='📍 <b>실제 위치</b>로 안내 중 — 지도를 보며 '+G.destShort+'로 이동하세요';hl.style.display='block';setTimeout(()=>hl.style.display='none',5200);
     lm.style.display='none';document.getElementById('gpsBtn').style.pointerEvents='';
   },err=>{
     lm.style.display='none';document.getElementById('gpsBtn').style.pointerEvents='';
@@ -569,11 +615,18 @@ function beginGPS(){
     toast(err&&err.code===1?'위치 권한을 허용해 주세요 🔒':'위치를 가져올 수 없어요','bad');
   },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
 }
+function setDirection(dir){
+  G.dir=dir;
+  document.querySelectorAll('.dirbtn').forEach(b=>b.classList.toggle('on',b.dataset.dir===dir));
+  document.getElementById('gpsBtn').textContent=dir==='to_station'?'📍 내 위치에서 가까운 역으로 (GPS)':'📍 내 위치에서 회사로 (GPS)';
+  buildStationList();
+}
+document.querySelectorAll('.dirbtn').forEach(b=>b.onclick=()=>setDirection(b.dataset.dir));
 document.getElementById('gpsBtn').onclick=beginGPS;
 document.getElementById('recenterBtn').onclick=()=>{if(G.userLL)map.setView(G.userLL,map.getZoom(),{animate:true});};
 
 /* ---------- 아이콘 종류 필터 ---------- */
-const FILTER_CATS=[{k:'star',e:'⭐',l:'명소'},{k:'cafe',e:'☕',l:'카페'},{k:'food',e:'🍽',l:'식당'},{k:'conv',e:'🏪',l:'편의점'},{k:'pharm',e:'💊',l:'약국'},{k:'hosp',e:'🏥',l:'병원'},{k:'cloth',e:'👕',l:'의류'},{k:'shop',e:'🛍',l:'상점'}];
+const FILTER_CATS=[{k:'star',e:'⭐',l:'명소'},{k:'popup',e:'🎪',l:'팝업'},{k:'cafe',e:'☕',l:'카페'},{k:'food',e:'🍽',l:'식당'},{k:'conv',e:'🏪',l:'편의점'},{k:'pharm',e:'💊',l:'약국'},{k:'hosp',e:'🏥',l:'병원'},{k:'cloth',e:'👕',l:'의류'},{k:'shop',e:'🛍',l:'상점'}];
 function buildFilter(){
   const p=document.getElementById('fpanel');p.innerHTML='<div class="ft">아이콘 종류</div>';
   FILTER_CATS.forEach(c=>{const el=document.createElement('div');el.className='fchip'+(G.filter[c.k]?' on':'');el.innerHTML='<span class="fem">'+c.e+'</span>'+c.l;
