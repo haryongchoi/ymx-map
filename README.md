@@ -5,6 +5,7 @@
 
 **▶ 바로가기: https://haryongchoi.github.io/ymx-map/**
 
+> 디지털 트윈 회사답게, 현실의 성수동을 그대로 지도 위에 옮겼습니다. 🌐
 
 ---
 
@@ -53,8 +54,10 @@
 
 - **수정**: `index.html` 상단의 `COMPANY`, `STATIONS`, `CURATED` 좌표/값을 바꾸면 회사·출발역·대표 명소를 조정할 수 있습니다. 지도 타일은 `TILE_URL` 한 줄로 교체 가능합니다.
 - **로컬 실행**: 파일이 있는 폴더에서
-  `python3 -m http.server 8000`
-  실행 후 브라우저에서 `http://localhost:8000` 접속. (단, GPS는 HTTPS 필요)
+  ```bash
+  python3 -m http.server 8000
+  ```
+  실행 후 브라우저에서 `http://localhost:8000` 접속.
 
 ---
 
@@ -66,4 +69,4 @@
 
 ---
 
-© YMX (와이엠엑스) · 서울 성동구 · 서울숲 코오롱디지털타워1차
+<sub>© YMX (와이엠엑스) · 서울 성동구 · 서울숲 코오롱디지털타워1차</sub>
